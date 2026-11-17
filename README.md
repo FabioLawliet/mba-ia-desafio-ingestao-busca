@@ -51,6 +51,30 @@ RESPOSTA: Não tenho informações necessárias para responder sua pergunta.
 
 Os limites de requisições gratuitas dos modelos podem mudar com frequência. Para informações atualizadas, consulte a documentação oficial do Google.
 
+## Escolha do provedor de IA (Google ou Ollama local)
+
+O projeto suporta dois provedores, controlados pela variável `AI_PROVIDER` no `.env`:
+
+| Valor | Embeddings | Chat (LLM) | Custo |
+|---|---|---|---|
+| `ollama` (padrão) | Ollama local (`qwen3-embedding:0.6b`) | Ollama local (`gemma3:4b`) | Grátis, sem cota |
+| `google` | Google AI Studio | Google AI Studio | Grátis com cota (rate limit por minuto) |
+
+O Ollama já é o padrão deste projeto (`AI_PROVIDER=ollama` no `.env`). Para usá-lo:
+
+1. Instale o Ollama em https://ollama.com (se ainda não tiver).
+2. Baixe os modelos:
+   ```bash
+   ollama pull qwen3-embedding:0.6b
+   ollama pull gemma3:4b
+   ```
+
+Para usar o Google AI Studio no lugar do Ollama, troque `AI_PROVIDER=ollama` para `AI_PROVIDER=google` no `.env` e informe sua `GOOGLE_API_KEY`.
+
+Os modelos de cada provedor ficam nas variáveis `GOOGLE_*` e `OLLAMA_*` do `.env`.
+
+> **Atenção:** os vetores gerados por um provedor não servem para o outro (dimensões diferentes). Ao trocar `AI_PROVIDER`, refaça a ingestão (`python src/ingest.py`) para recriar os vetores com o novo modelo.
+
 ## Escolha dos modelos
 
 Este desafio não fixa modelos. Nomes e versões mudam com frequência e alguns são descontinuados, então faz parte do desafio consultar a documentação oficial do provedor que você escolher, ver quais modelos estão disponíveis no momento e selecionar os que atendem ao objetivo. Para o volume deste desafio, os modelos mais leves e baratos de cada provedor são suficientes.

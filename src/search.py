@@ -1,29 +1,41 @@
-PROMPT_TEMPLATE = """
-CONTEXTO:
-{contexto}
+import os
 
-REGRAS:
-- Responda somente com base no CONTEXTO.
-- Se a informação não estiver explicitamente no CONTEXTO, responda:
-  "Não tenho informações necessárias para responder sua pergunta."
-- Nunca invente ou use conhecimento externo.
-- Nunca produza opiniões ou interpretações além do que está escrito.
+from dotenv import load_dotenv
+from langchain_postgres import PGVector
+from providers import get_embeddings
 
-EXEMPLOS DE PERGUNTAS FORA DO CONTEXTO:
-Pergunta: "Qual é a capital da França?"
-Resposta: "Não tenho informações necessárias para responder sua pergunta."
+load_dotenv()
 
-Pergunta: "Quantos clientes temos em 2024?"
-Resposta: "Não tenho informações necessárias para responder sua pergunta."
+DATABASE_URL = os.getenv("DATABASE_URL")
+COLLECTION_NAME = os.getenv("PG_VECTOR_COLLECTION_NAME")
 
-Pergunta: "Você acha isso bom ou ruim?"
-Resposta: "Não tenho informações necessárias para responder sua pergunta."
+def buscar_contexto(pergunta: str) -> str:
 
-PERGUNTA DO USUÁRIO:
-{pergunta}
+    embeddings = get_embeddings()
 
-RESPONDA A "PERGUNTA DO USUÁRIO"
-"""
+    vector_store = PGVector(
+        embeddings=embeddings,
+        collection_name=COLLECTION_NAME,
+        connection=DATABASE_URL,
+        use_jsonb=True
+    )
 
-def search_prompt(question=None):
-    pass
+    # Buscar os 10 resultados mais relevantes
+    resultados = vector_store.similarity_search_with_score(
+        pergunta,
+        k=10
+    )
+
+    # Concatenar os textos encontrados
+    contextos = []
+
+    for documento, score in resultados:
+        pagina = documento.metadata.get("page", "N/A")
+
+        contextos.append(
+            f"Página: {pagina + 1 if isinstance(pagina, int) else pagina}\n"
+            f"Conteúdo: {documento.page_content}"
+        )
+
+    return "\n\n".join(contextos)
+
